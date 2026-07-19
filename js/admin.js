@@ -20,6 +20,14 @@ const refreshButton = document.getElementById("refreshUsers");
 const searchInput = document.getElementById("searchInput");
 const sortAccessBtn = document.getElementById("sortAccessBtn");
 const sortDirectionLabel = document.getElementById("sortDirectionLabel");
+const adminWelcomeTitle = document.getElementById("adminWelcomeTitle");
+const adminHeroTitle = document.getElementById("adminHeroTitle");
+const adminUserType = document.getElementById("adminUserType");
+const accountName = document.getElementById("accountName");
+const accountEmail = document.getElementById("accountEmail");
+const accountCpf = document.getElementById("accountCpf");
+const accountType = document.getElementById("accountType");
+const themeSelect = document.getElementById("themeSelect");
 
 let clientesCache = [];
 let sortAscending = false;
@@ -239,10 +247,32 @@ async function removerCliente(cpf) {
   }
 }
 
+function popularDadosAdmin() {
+  const usuario = JSON.parse(localStorage.getItem("usuario") || "null");
+  if (!usuario) return;
+
+  const nome = usuario.nome || "Administrador";
+  const tipo = usuario.tipo || "ADMIN";
+
+  if (adminWelcomeTitle) adminWelcomeTitle.textContent = `Olá, ${nome}`;
+  if (adminHeroTitle) adminHeroTitle.textContent = `Bem-vindo, ${nome}`;
+  if (adminUserType) adminUserType.textContent = tipo;
+  if (accountName) accountName.textContent = nome;
+  if (accountEmail) accountEmail.textContent = usuario.email || "—";
+  if (accountCpf) accountCpf.textContent = usuario.cpf || "—";
+  if (accountType) accountType.textContent = tipo;
+
+  const temaSalvo = localStorage.getItem("appTheme") || "light";
+  document.body.dataset.theme = temaSalvo;
+  if (themeSelect) themeSelect.value = temaSalvo;
+}
+
 function inicializarAdmin() {
   if (!verificarAdmin()) {
     return;
   }
+
+  popularDadosAdmin();
 
   if (fecharUsuario) {
     fecharUsuario.addEventListener("click", () => {
@@ -266,6 +296,38 @@ function inicializarAdmin() {
     sortAscending = !sortAscending;
     sortDirectionLabel.textContent = sortAscending ? "↑" : "↓";
     renderizarClientes(aplicarFiltroEOrdenacao(clientesCache));
+  });
+
+  document.querySelectorAll(".status-toggle").forEach((button) => {
+    button.addEventListener("click", () => {
+      const guide = button.dataset.guide;
+      const isPaid = button.textContent.includes("Pago");
+      button.textContent = isPaid ? "Marcar como pendente" : "Foi pago";
+      button.classList.toggle("is-paid", !isPaid);
+      if (guide) {
+        const note = document.querySelector(`[data-guide="${guide}"]`);
+        if (note && note.tagName === "TEXTAREA") {
+          note.placeholder = isPaid ? "Descreva o que falta para concluir." : "Defina o que falta para concluir a guia.";
+        }
+      }
+    });
+  });
+
+  document.querySelectorAll(".guide-notes").forEach((textarea) => {
+    textarea.addEventListener("input", () => {
+      localStorage.setItem(`guide:${textarea.dataset.guide}`, textarea.value);
+    });
+  });
+
+  document.querySelectorAll(".guide-notes").forEach((textarea) => {
+    const savedValue = localStorage.getItem(`guide:${textarea.dataset.guide}`);
+    if (savedValue) textarea.value = savedValue;
+  });
+
+  themeSelect?.addEventListener("change", (event) => {
+    const selectedTheme = event.target.value;
+    localStorage.setItem("appTheme", selectedTheme);
+    document.body.dataset.theme = selectedTheme;
   });
 
   carregarClientes();
